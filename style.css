@@ -245,6 +245,13 @@ li {
   top: 58%;
 }
 
+.game-object {
+  position: absolute;
+  font-size: 2rem;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .drill-player {
   position: absolute;
   left: 50%;

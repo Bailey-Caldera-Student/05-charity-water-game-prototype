@@ -7,7 +7,6 @@ const screens = {
 
 const startBtn = document.getElementById('startBtn');
 const beginGameBtn = document.getElementById('beginGameBtn');
-const drillBtn = document.getElementById('drillBtn');
 const againBtn = document.getElementById('playAgainBtn');
 const scoreValue = document.getElementById('scoreValue');
 const meterFill = document.getElementById('meterFill');
@@ -23,6 +22,9 @@ let timer = 60;
 let isDragging = false;
 let dragOffset = 0;
 let timerInterval = null;
+let spawnInterval = null;
+let objectAnimationFrame = null;
+const objects = [];
 
 // Show one screen at a time.
 function showScreen(screenName) {
@@ -38,6 +40,7 @@ function resetGame() {
   message.textContent = 'Keep drilling to reach clean water.';
   updateScore();
   updateTimer();
+  clearObjects();
   showScreen('game');
 }
 
@@ -45,11 +48,14 @@ function resetGame() {
 function startGame() {
   resetGame();
   startTimer();
+  startSpawning();
 }
 
 // End the game and show the win screen.
 function endGame() {
   clearInterval(timerInterval);
+  clearInterval(spawnInterval);
+  cancelAnimationFrame(objectAnimationFrame);
   finalScore.textContent = score;
   showScreen('win');
 }
@@ -124,12 +130,81 @@ function stopDragging(event) {
   }
 }
 
-// Switch to the win screen when the meter reaches the end.
-function checkWin() {
-  if (progress >= 100) {
-    message.textContent = 'You reached drinkable water!';
-    endGame();
-  }
+function clearObjects() {
+  objects.splice(0, objects.length);
+  playField.querySelectorAll('.game-object').forEach(item => item.remove());
+}
+
+function createObject() {
+  const objectTypes = [
+    { name: 'water', symbol: '💧', points: 10 },
+    { name: 'jerry-can', symbol: '🫙', points: 20 },
+    { name: 'boulder', symbol: '🪨', points: -20 }
+  ];
+  const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+  const item = document.createElement('div');
+  item.className = `game-object ${type.name}`;
+  item.textContent = type.symbol;
+  item.dataset.points = type.points;
+
+  const x = Math.random() * (playField.clientWidth - 40);
+  item.style.left = `${x}px`;
+  item.style.top = '0px';
+  playField.appendChild(item);
+  objects.push(item);
+}
+
+function moveObjects() {
+  objects.forEach(item => {
+    const top = Number(item.style.top.replace('px', ''));
+    const newTop = top + 2;
+    item.style.top = `${newTop}px`;
+
+    if (newTop > playField.clientHeight - 70) {
+      item.remove();
+      const index = objects.indexOf(item);
+      if (index > -1) {
+        objects.splice(index, 1);
+      }
+    }
+  });
+
+  checkCollisions();
+  objectAnimationFrame = requestAnimationFrame(moveObjects);
+}
+
+function checkCollisions() {
+  const drillRect = drillPlayer.getBoundingClientRect();
+
+  objects.forEach(item => {
+    const itemRect = item.getBoundingClientRect();
+    const hit = (
+      itemRect.left < drillRect.right &&
+      itemRect.right > drillRect.left &&
+      itemRect.top < drillRect.bottom &&
+      itemRect.bottom > drillRect.top
+    );
+
+    if (hit) {
+      const points = Number(item.dataset.points);
+      score = Math.max(0, score + points);
+      updateScore();
+      item.remove();
+      const index = objects.indexOf(item);
+      if (index > -1) {
+        objects.splice(index, 1);
+      }
+    }
+  });
+}
+
+function startSpawning() {
+  clearInterval(spawnInterval);
+  spawnInterval = setInterval(() => {
+    createObject();
+  }, 700);
+  cancelAnimationFrame(objectAnimationFrame);
+  objectAnimationFrame = requestAnimationFrame(moveObjects);
 }
 
 startBtn.addEventListener('click', () => {
@@ -138,23 +213,6 @@ startBtn.addEventListener('click', () => {
 
 beginGameBtn.addEventListener('click', () => {
   startGame();
-});
-
-drillBtn.addEventListener('click', () => {
-  progress += 20;
-  score += 10;
-  updateScore();
-
-  if (progress >= 100) {
-    message.textContent = 'Great job! Clean water is flowing.';
-    checkWin();
-  } else if (progress >= 60) {
-    message.textContent = 'The water is getting clearer!';
-  } else if (progress >= 40) {
-    message.textContent = 'You are getting close to the water table.';
-  } else {
-    message.textContent = 'Keep drilling!';
-  }
 });
 
 againBtn.addEventListener('click', () => {
