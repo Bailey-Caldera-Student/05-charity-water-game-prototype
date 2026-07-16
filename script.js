@@ -13,10 +13,14 @@ const scoreValue = document.getElementById('scoreValue');
 const meterFill = document.getElementById('meterFill');
 const message = document.getElementById('message');
 const finalScore = document.getElementById('finalScore');
+const playField = document.querySelector('.play-field');
+const drillPlayer = document.getElementById('drillPlayer');
 
 let score = 0;
 let progress = 0;
 let timer = 30;
+let isDragging = false;
+let dragOffset = 0;
 
 // Show one screen at a time.
 function showScreen(screenName) {
@@ -50,6 +54,51 @@ function updateScore() {
   scoreValue.textContent = score;
   finalScore.textContent = score;
   meterFill.style.width = `${Math.min(progress, 100)}%`;
+}
+
+function clampPosition(x) {
+  const maxX = playField.clientWidth - drillPlayer.offsetWidth;
+  return Math.max(0, Math.min(x, maxX));
+}
+
+function updateDrillPosition(x) {
+  const left = clampPosition(x);
+  drillPlayer.style.left = `${left}px`;
+}
+
+function startDragging(event) {
+  if (!playField) {
+    return;
+  }
+
+  isDragging = true;
+  const rect = playField.getBoundingClientRect();
+  const pointerX = event.clientX || event.touches[0].clientX;
+  const drillLeft = drillPlayer.offsetLeft;
+  dragOffset = pointerX - rect.left - drillLeft;
+  playField.setPointerCapture(event.pointerId);
+}
+
+function dragPlayer(event) {
+  if (!isDragging || !playField) {
+    return;
+  }
+
+  const rect = playField.getBoundingClientRect();
+  const pointerX = event.clientX || event.touches[0].clientX;
+  const newLeft = pointerX - rect.left - dragOffset;
+  updateDrillPosition(newLeft);
+}
+
+function stopDragging(event) {
+  if (!isDragging) {
+    return;
+  }
+
+  isDragging = false;
+  if (event?.pointerId !== undefined) {
+    playField.releasePointerCapture(event.pointerId);
+  }
 }
 
 // Switch to the win screen when the meter reaches the end.
@@ -88,6 +137,11 @@ drillBtn.addEventListener('click', () => {
 againBtn.addEventListener('click', () => {
   startGame();
 });
+
+playField.addEventListener('pointerdown', startDragging);
+playField.addEventListener('pointermove', dragPlayer);
+playField.addEventListener('pointerup', stopDragging);
+playField.addEventListener('pointercancel', stopDragging);
 
 updateScore();
 showScreen('start');
