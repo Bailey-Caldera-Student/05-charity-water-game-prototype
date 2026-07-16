@@ -58,10 +58,16 @@ body {
 #startScreen {
   background: linear-gradient(180deg, #ffffff 0%, #ffffff 45%, #4f4f4f 45%, #4f4f4f 100%);
   color: #ffffff;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding-top: 1.6rem;
+  padding-bottom: 1.25rem;
 }
 
-#startScreen h1,
+#startScreen h1 {
+  color: #111111;
+}
+
 #startScreen p {
   color: #ffffff;
 }
@@ -70,6 +76,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  margin-top: 3.8rem;
 }
 
 .start-title {
@@ -84,6 +91,11 @@ body {
   font-weight: 600;
   color: #fefefe;
   opacity: 0.95;
+  margin-top: 0.35rem;
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.16);
 }
 
 #howToPlayScreen {
@@ -124,6 +136,7 @@ body {
   gap: 0.75rem;
   flex-wrap: wrap;
   justify-content: center;
+  margin-top: 1.2rem;
 }
 
 .icon-card {
@@ -195,6 +208,7 @@ li {
 .primary-btn {
   background: var(--green);
   color: var(--white);
+  margin-top: 1rem;
 }
 
 .hud {
@@ -407,14 +421,30 @@ li {
 }
 
 @media (max-width: 480px) {
+  body {
+    padding: 0;
+    align-items: stretch;
+  }
+
   .game-shell {
-    width: 90vw;
-    height: 88vh;
-    border-radius: 24px;
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .screen {
+    padding: 0.9rem;
+  }
+
+  .game-panel {
+    padding: 0.75rem;
   }
 
   .play-field {
-    min-height: 340px;
+    min-height: 0;
+    flex: 1;
+    margin: 0.5rem 0;
   }
 
   .hud {
