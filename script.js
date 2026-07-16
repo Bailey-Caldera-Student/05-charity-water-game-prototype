@@ -137,29 +137,48 @@ function getPointerX(event) {
   return event.clientX;
 }
 
-// Start dragging the drill horizontally.
+// Check whether the event is coming from a desktop-style pointer.
+function isDesktopPointer(event) {
+  return event.pointerType === 'mouse' || (
+    event.pointerType === '' && window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  );
+}
+
+// Start dragging the drill horizontally for touch input.
 function startDragging(event) {
-  if (!playField || !gameState.isActive) {
+  if (!playField || !gameState.isActive || isDesktopPointer(event)) {
     return;
   }
 
   gameState.isDragging = true;
   const playFieldRect = playField.getBoundingClientRect();
   const pointerX = getPointerX(event);
-  const drillLeft = drillPlayer.offsetLeft;
-  gameState.dragOffset = pointerX - playFieldRect.left - drillLeft;
+  const drillCenter = drillPlayer.offsetWidth / 2;
+  gameState.dragOffset = pointerX - playFieldRect.left - drillCenter;
   playField.setPointerCapture(event.pointerId);
 }
 
-// Continue dragging the drill while the pointer moves.
+// Continue moving the drill while the pointer moves.
 function dragDrill(event) {
-  if (!gameState.isDragging || !playField || !gameState.isActive) {
+  if (!playField || !gameState.isActive) {
     return;
   }
 
   const playFieldRect = playField.getBoundingClientRect();
   const pointerX = getPointerX(event);
-  const newLeft = pointerX - playFieldRect.left - gameState.dragOffset;
+
+  if (isDesktopPointer(event)) {
+    const drillCenter = drillPlayer.offsetWidth / 2;
+    updateDrillPosition(pointerX - playFieldRect.left - drillCenter);
+    return;
+  }
+
+  if (!gameState.isDragging) {
+    return;
+  }
+
+  const drillCenter = drillPlayer.offsetWidth / 2;
+  const newLeft = pointerX - playFieldRect.left - drillCenter;
   updateDrillPosition(newLeft);
 }
 
@@ -186,13 +205,18 @@ function createCollectible() {
   const type = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
   const collectible = document.createElement('div');
   collectible.className = `game-object ${type.name} ${type.sizeClass}`;
-  collectible.textContent = type.symbol;
   collectible.dataset.points = type.points;
   collectible.dataset.speed = type.speed;
 
+  if (type.name === 'jerry-can') {
+    collectible.innerHTML = '<img src="img/water-can.png" alt="water can" />';
+  } else {
+    collectible.textContent = type.symbol;
+  }
+
   const xPosition = Math.random() * (playField.clientWidth - 60);
   collectible.style.left = `${xPosition}px`;
-  collectible.style.top = '0px';
+  collectible.style.top = `${playField.clientHeight - 70}px`;
 
   playField.appendChild(collectible);
   gameState.activeObjects.push(collectible);
@@ -205,12 +229,12 @@ function moveCollectibles() {
   }
 
   gameState.activeObjects.forEach(collectible => {
-    const currentTop = Number(collectible.style.top.replace('px', '')) || 0;
+    const currentTop = Number(collectible.style.top.replace('px', '')) || playField.clientHeight;
     const speed = Number(collectible.dataset.speed || 2);
-    const newTop = currentTop + speed;
+    const newTop = currentTop - speed;
     collectible.style.top = `${newTop}px`;
 
-    if (newTop > playField.clientHeight - 70) {
+    if (newTop < -40) {
       removeCollectible(collectible);
     }
   });
@@ -297,7 +321,7 @@ buttonElements.playAgain.addEventListener('click', () => {
   startGame();
 });
 
-// Let the player drag the drill on both desktop and mobile.
+// Let the player move the drill on both desktop and mobile.
 playField.addEventListener('pointerdown', startDragging);
 playField.addEventListener('pointermove', dragDrill);
 playField.addEventListener('pointerup', stopDragging);

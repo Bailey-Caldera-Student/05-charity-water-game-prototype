@@ -10,10 +10,13 @@
     <main class="game-shell">
       <section id="startScreen" class="screen active">
         <div class="icon-bubble">⛏️</div>
-        <h1>Water Drilling</h1>
+        <div class="title-block">
+          <h1 class="start-title">Water Drilling</h1>
+          <p class="start-subtitle">Dig for clean water</p>
+        </div>
         <div class="icon-row">
           <div class="icon-card"><span class="icon">⛏️</span><div>Drill</div></div>
-          <div class="icon-card"><span class="icon">🫙</span><div>Jerry Can</div></div>
+          <div class="icon-card"><img class="icon-image" src="img/water-can.png" alt="Water can" /><div>Water Can</div></div>
         </div>
         <button id="startBtn" class="primary-btn">Start</button>
       </section>
@@ -43,11 +46,6 @@
           </div>
 
           <div class="play-field" aria-label="drilling game area">
-            <div class="collectibles-area">
-              <div class="collectible water">💧</div>
-              <div class="collectible jerry-can">🫙</div>
-              <div class="collectible boulder">🪨</div>
-            </div>
             <div class="drill-player" id="drillPlayer">⛏️</div>
           </div>
 
