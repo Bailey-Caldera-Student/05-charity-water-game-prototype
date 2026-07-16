@@ -209,7 +209,7 @@ function createCollectible() {
   collectible.dataset.speed = type.speed;
 
   if (type.name === 'jerry-can') {
-    collectible.innerHTML = '<img src="img/water-can.png" alt="water can" />';
+    collectible.innerHTML = '<img src="img/water-can-transparent.png" alt="Charity Water Jerry can" />';
   } else {
     collectible.textContent = type.symbol;
   }
