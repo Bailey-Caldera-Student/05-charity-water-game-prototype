@@ -1,0 +1,269 @@
+:root {
+  --sky: #dff7ff;
+  --blue: #2e9df7;
+  --deep-blue: #135d9a;
+  --yellow: #ffc907;
+  --green: #4fcb53;
+  --white: #ffffff;
+  --text: #17324d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: linear-gradient(180deg, #f8fdff 0%, #cfeffd 100%);
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+}
+
+.game-shell {
+  width: min(100%, 430px);
+  min-height: 720px;
+  background: var(--sky);
+  border: 4px solid var(--deep-blue);
+  border-radius: 32px;
+  box-shadow: 0 18px 45px rgba(23, 50, 77, 0.2);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen {
+  display: none;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.screen.active {
+  display: flex;
+}
+
+.icon-bubble {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.12);
+}
+
+.icon-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.icon-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 0.8rem 1rem;
+  min-width: 110px;
+  box-shadow: 0 8px 20px rgba(23, 50, 77, 0.08);
+}
+
+.icon-card .icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+h1,
+h2 {
+  margin: 0;
+  color: var(--deep-blue);
+}
+
+p,
+li {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.instructions {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  width: 100%;
+  box-shadow: 0 8px 20px rgba(23, 50, 77, 0.08);
+}
+
+.instructions ul {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+}
+
+.primary-btn,
+.drill-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.9rem 1.4rem;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.primary-btn:hover,
+.drill-btn:hover {
+  transform: scale(1.03);
+}
+
+.primary-btn {
+  background: var(--green);
+  color: var(--white);
+}
+
+.hud {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.score-card {
+  background: var(--white);
+  border-radius: 14px;
+  padding: 0.7rem 0.9rem;
+  font-weight: bold;
+}
+
+.meter {
+  width: 100%;
+  height: 18px;
+  background: #cfeffd;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid var(--deep-blue);
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  transition: width 0.2s ease;
+}
+
+.game-panel {
+  width: 100%;
+  background: var(--white);
+  border-radius: 22px;
+  padding: 1.2rem;
+  box-shadow: 0 8px 20px rgba(23, 50, 77, 0.08);
+}
+
+.play-field {
+  position: relative;
+  min-height: 260px;
+  margin: 1rem 0;
+  background: linear-gradient(180deg, #f3fcff 0%, #ccecff 100%);
+  border: 3px solid var(--blue);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.collectibles-area {
+  position: absolute;
+  inset: 0;
+}
+
+.collectible {
+  position: absolute;
+  font-size: 2rem;
+  animation: float 2.5s ease-in-out infinite;
+}
+
+.collectible.water {
+  left: 18%;
+  top: 20%;
+}
+
+.collectible.jerry-can {
+  right: 18%;
+  top: 32%;
+}
+
+.collectible.boulder {
+  left: 45%;
+  top: 58%;
+}
+
+.drill-player {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  font-size: 3rem;
+}
+
+.ground-area {
+  background: #7f4f24;
+  color: var(--white);
+  padding: 0.75rem;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.drill-btn {
+  background: var(--yellow);
+  color: var(--text);
+  font-size: 1.2rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.message {
+  font-weight: bold;
+  color: var(--deep-blue);
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (min-width: 768px) {
+  body {
+    padding: 2rem;
+  }
+
+  .game-shell {
+    min-height: 760px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-shell {
+    min-height: 88vh;
+    border-radius: 24px;
+    padding: 1rem;
+  }
+
+  .hud {
+    flex-direction: column;
+  }
+}
