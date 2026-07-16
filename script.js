@@ -1,269 +1,308 @@
-const screens = {
+const screenElements = {
   start: document.getElementById('startScreen'),
   howToPlay: document.getElementById('howToPlayScreen'),
   game: document.getElementById('gameScreen'),
   win: document.getElementById('winScreen')
 };
 
-const startBtn = document.getElementById('startBtn');
-const beginGameBtn = document.getElementById('beginGameBtn');
-const againBtn = document.getElementById('playAgainBtn');
-const scoreValue = document.getElementById('scoreValue');
-const meterFill = document.getElementById('meterFill');
-const message = document.getElementById('message');
-const finalScore = document.getElementById('finalScore');
-const timerValue = document.getElementById('timerValue');
+const buttonElements = {
+  start: document.getElementById('startBtn'),
+  beginGame: document.getElementById('beginGameBtn'),
+  playAgain: document.getElementById('playAgainBtn')
+};
+
+const uiElements = {
+  score: document.getElementById('scoreValue'),
+  meterFill: document.getElementById('meterFill'),
+  message: document.getElementById('message'),
+  finalScore: document.getElementById('finalScore'),
+  timer: document.getElementById('timerValue')
+};
+
 const playField = document.querySelector('.play-field');
 const drillPlayer = document.getElementById('drillPlayer');
 
-let score = 0;
-let progress = 0;
-let timer = 60;
-let isDragging = false;
-let dragOffset = 0;
-let timerInterval = null;
-let spawnInterval = null;
-let objectAnimationFrame = null;
-let gameActive = false;
-let popupTimeouts = [];
-const objects = [];
+const gameState = {
+  score: 0,
+  progress: 0,
+  timeLeft: 60,
+  isDragging: false,
+  dragOffset: 0,
+  timerId: null,
+  spawnId: null,
+  animationFrameId: null,
+  isActive: false,
+  popupTimeoutIds: [],
+  activeObjects: []
+};
 
-// Show one screen at a time.
+// Show one screen at a time so the flow matches the wireframe.
 function showScreen(screenName) {
-  Object.values(screens).forEach(screen => screen.classList.remove('active'));
-  screens[screenName].classList.add('active');
+  Object.values(screenElements).forEach(screen => screen.classList.remove('active'));
+  screenElements[screenName].classList.add('active');
+}
+
+// Update the visible score, timer, and progress meter in one place.
+function updateHud() {
+  uiElements.score.textContent = gameState.score;
+  uiElements.finalScore.textContent = gameState.score;
+  uiElements.timer.textContent = gameState.timeLeft;
+  uiElements.meterFill.style.width = `${Math.min(gameState.progress, 100)}%`;
+}
+
+// Set a short message for the player during the round.
+function setMessage(text) {
+  uiElements.message.textContent = text;
+}
+
+// Stop all gameplay timers, animation frames, and popup timeouts.
+function stopGameplayLoop() {
+  clearInterval(gameState.timerId);
+  clearInterval(gameState.spawnId);
+  cancelAnimationFrame(gameState.animationFrameId);
+  gameState.popupTimeoutIds.forEach(timeoutId => clearTimeout(timeoutId));
+  gameState.popupTimeoutIds = [];
+}
+
+// Remove all collectible objects and floating score popups.
+function clearObjects() {
+  gameState.activeObjects.splice(0, gameState.activeObjects.length);
+  playField.querySelectorAll('.game-object').forEach(item => item.remove());
+  playField.querySelectorAll('.floating-score').forEach(item => item.remove());
 }
 
 // Reset the game state and return to the gameplay view.
 function resetGame() {
-  clearGameLoop();
-  score = 0;
-  progress = 0;
-  timer = 60;
-  gameActive = false;
-  message.textContent = 'Keep drilling to reach clean water.';
-  updateScore();
-  updateTimer();
+  stopGameplayLoop();
+  gameState.score = 0;
+  gameState.progress = 0;
+  gameState.timeLeft = 60;
+  gameState.isDragging = false;
+  gameState.isActive = false;
+  setMessage('Keep drilling to reach clean water.');
+  updateHud();
   clearObjects();
   showScreen('game');
 }
 
-// Start the actual gameplay.
+// Start the actual gameplay and begin the timer and object spawning.
 function startGame() {
   resetGame();
-  gameActive = true;
+  gameState.isActive = true;
   startTimer();
   startSpawning();
 }
 
 // End the game and show the win screen.
-function clearGameLoop() {
-  clearInterval(timerInterval);
-  clearInterval(spawnInterval);
-  cancelAnimationFrame(objectAnimationFrame);
-  popupTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-  popupTimeouts = [];
-}
-
 function endGame() {
-  gameActive = false;
-  clearGameLoop();
-  finalScore.textContent = score;
+  gameState.isActive = false;
+  stopGameplayLoop();
+  clearObjects();
+  uiElements.finalScore.textContent = gameState.score;
   showScreen('win');
 }
 
-// Update the score and the progress bar.
-function updateScore() {
-  scoreValue.textContent = score;
-  finalScore.textContent = score;
-  meterFill.style.width = `${Math.min(progress, 100)}%`;
-}
-
-function updateTimer() {
-  timerValue.textContent = timer;
-}
-
+// Start the countdown timer.
 function startTimer() {
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timer -= 1;
-    updateTimer();
+  clearInterval(gameState.timerId);
+  gameState.timerId = setInterval(() => {
+    gameState.timeLeft -= 1;
+    updateHud();
 
-    if (timer <= 0) {
-      clearInterval(timerInterval);
-      message.textContent = 'Time is up! The drill reached the water.';
+    if (gameState.timeLeft <= 0) {
+      clearInterval(gameState.timerId);
+      setMessage('Time is up! The drill reached the water.');
       endGame();
     }
   }, 1000);
 }
 
-function clampPosition(x) {
+// Clamp the drill so it stays inside the play field.
+function clampDrillPosition(xPosition) {
   const maxX = playField.clientWidth - drillPlayer.offsetWidth;
-  return Math.max(0, Math.min(x, maxX));
+  return Math.max(0, Math.min(xPosition, maxX));
 }
 
-function updateDrillPosition(x) {
-  const left = clampPosition(x);
-  drillPlayer.style.left = `${left}px`;
+// Move the drill to an x position.
+function updateDrillPosition(xPosition) {
+  const newX = clampDrillPosition(xPosition);
+  drillPlayer.style.left = `${newX}px`;
 }
 
+// Return a pointer position for mouse or touch input.
+function getPointerX(event) {
+  if (event.touches && event.touches[0]) {
+    return event.touches[0].clientX;
+  }
+  return event.clientX;
+}
+
+// Start dragging the drill horizontally.
 function startDragging(event) {
-  if (!playField || !gameActive) {
+  if (!playField || !gameState.isActive) {
     return;
   }
 
-  isDragging = true;
-  const rect = playField.getBoundingClientRect();
-  const pointerX = event.clientX || event.touches[0].clientX;
+  gameState.isDragging = true;
+  const playFieldRect = playField.getBoundingClientRect();
+  const pointerX = getPointerX(event);
   const drillLeft = drillPlayer.offsetLeft;
-  dragOffset = pointerX - rect.left - drillLeft;
+  gameState.dragOffset = pointerX - playFieldRect.left - drillLeft;
   playField.setPointerCapture(event.pointerId);
 }
 
-function dragPlayer(event) {
-  if (!isDragging || !playField || !gameActive) {
+// Continue dragging the drill while the pointer moves.
+function dragDrill(event) {
+  if (!gameState.isDragging || !playField || !gameState.isActive) {
     return;
   }
 
-  const rect = playField.getBoundingClientRect();
-  const pointerX = event.clientX || event.touches[0].clientX;
-  const newLeft = pointerX - rect.left - dragOffset;
+  const playFieldRect = playField.getBoundingClientRect();
+  const pointerX = getPointerX(event);
+  const newLeft = pointerX - playFieldRect.left - gameState.dragOffset;
   updateDrillPosition(newLeft);
 }
 
+// Stop dragging when the pointer is released.
 function stopDragging(event) {
-  if (!isDragging) {
+  if (!gameState.isDragging) {
     return;
   }
 
-  isDragging = false;
+  gameState.isDragging = false;
   if (event?.pointerId !== undefined) {
     playField.releasePointerCapture(event.pointerId);
   }
 }
 
-function clearObjects() {
-  objects.splice(0, objects.length);
-  playField.querySelectorAll('.game-object').forEach(item => item.remove());
-  playField.querySelectorAll('.floating-score').forEach(item => item.remove());
-}
-
-function createObject() {
-  const objectTypes = [
-    { name: 'water', symbol: '💧', points: 10, size: 'medium', speed: 2.5 },
-    { name: 'jerry-can', symbol: '🫙', points: 20, size: 'small', speed: 2 },
-    { name: 'boulder', symbol: '🪨', points: -20, size: 'large', speed: 1.5 }
+// Create a new collectible object with a random type, size, speed, and points.
+function createCollectible() {
+  const collectibleTypes = [
+    { name: 'water', symbol: '💧', points: 10, sizeClass: 'medium', speed: 2.5 },
+    { name: 'jerry-can', symbol: '🫙', points: 20, sizeClass: 'small', speed: 2 },
+    { name: 'boulder', symbol: '🪨', points: -20, sizeClass: 'large', speed: 1.5 }
   ];
-  const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
-  const item = document.createElement('div');
-  item.className = `game-object ${type.name} ${type.size}`;
-  item.textContent = type.symbol;
-  item.dataset.points = type.points;
-  item.dataset.speed = type.speed;
 
-  const x = Math.random() * (playField.clientWidth - 60);
-  item.style.left = `${x}px`;
-  item.style.top = '0px';
-  playField.appendChild(item);
-  objects.push(item);
+  const type = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
+  const collectible = document.createElement('div');
+  collectible.className = `game-object ${type.name} ${type.sizeClass}`;
+  collectible.textContent = type.symbol;
+  collectible.dataset.points = type.points;
+  collectible.dataset.speed = type.speed;
+
+  const xPosition = Math.random() * (playField.clientWidth - 60);
+  collectible.style.left = `${xPosition}px`;
+  collectible.style.top = '0px';
+
+  playField.appendChild(collectible);
+  gameState.activeObjects.push(collectible);
 }
 
-function moveObjects() {
-  if (!gameActive) {
+// Move each collectible downward and remove it when it leaves the play field.
+function moveCollectibles() {
+  if (!gameState.isActive) {
     return;
   }
 
-  objects.forEach(item => {
-    const top = Number(item.style.top.replace('px', ''));
-    const speed = Number(item.dataset.speed || 2);
-    const newTop = top + speed;
-    item.style.top = `${newTop}px`;
+  gameState.activeObjects.forEach(collectible => {
+    const currentTop = Number(collectible.style.top.replace('px', '')) || 0;
+    const speed = Number(collectible.dataset.speed || 2);
+    const newTop = currentTop + speed;
+    collectible.style.top = `${newTop}px`;
 
     if (newTop > playField.clientHeight - 70) {
-      item.remove();
-      const index = objects.indexOf(item);
-      if (index > -1) {
-        objects.splice(index, 1);
-      }
+      removeCollectible(collectible);
     }
   });
 
   checkCollisions();
-  objectAnimationFrame = requestAnimationFrame(moveObjects);
+  gameState.animationFrameId = requestAnimationFrame(moveCollectibles);
 }
 
-function showFloatingText(x, y, points) {
+// Remove one collectible from the DOM and from the active list.
+function removeCollectible(collectible) {
+  collectible.remove();
+  const index = gameState.activeObjects.indexOf(collectible);
+  if (index > -1) {
+    gameState.activeObjects.splice(index, 1);
+  }
+}
+
+// Show a short floating score popup near the hit object.
+function showFloatingText(xPosition, yPosition, points) {
   const popup = document.createElement('div');
   const fieldRect = playField.getBoundingClientRect();
   popup.className = 'floating-score';
   popup.textContent = points > 0 ? `+${points}` : `${points}`;
-  popup.style.left = `${Math.max(0, x - fieldRect.left)}px`;
-  popup.style.top = `${Math.max(0, y - fieldRect.top)}px`;
+  popup.style.left = `${Math.max(0, xPosition - fieldRect.left)}px`;
+  popup.style.top = `${Math.max(0, yPosition - fieldRect.top)}px`;
   playField.appendChild(popup);
 
   const timeoutId = setTimeout(() => {
     popup.remove();
   }, 700);
-  popupTimeouts.push(timeoutId);
+  gameState.popupTimeoutIds.push(timeoutId);
 }
 
+// Check if the drill overlaps a collectible and update the score.
 function checkCollisions() {
-  if (!gameActive) {
+  if (!gameState.isActive) {
     return;
   }
 
   const drillRect = drillPlayer.getBoundingClientRect();
+  const activeObjects = [...gameState.activeObjects];
 
-  objects.forEach(item => {
-    const itemRect = item.getBoundingClientRect();
+  activeObjects.forEach(collectible => {
+    const collectibleRect = collectible.getBoundingClientRect();
     const hit = (
-      itemRect.left < drillRect.right &&
-      itemRect.right > drillRect.left &&
-      itemRect.top < drillRect.bottom &&
-      itemRect.bottom > drillRect.top
+      collectibleRect.left < drillRect.right &&
+      collectibleRect.right > drillRect.left &&
+      collectibleRect.top < drillRect.bottom &&
+      collectibleRect.bottom > drillRect.top
     );
 
     if (hit) {
-      const points = Number(item.dataset.points);
-      score = Math.max(0, score + points);
-      updateScore();
-      showFloatingText(itemRect.left, itemRect.top, points);
-      item.remove();
-      const index = objects.indexOf(item);
-      if (index > -1) {
-        objects.splice(index, 1);
-      }
+      const points = Number(collectible.dataset.points);
+      gameState.score = Math.max(0, gameState.score + points);
+      updateHud();
+      showFloatingText(collectibleRect.left, collectibleRect.top, points);
+      removeCollectible(collectible);
     }
   });
 }
 
+// Spawn collectibles at a random interval while the game is active.
 function startSpawning() {
-  clearInterval(spawnInterval);
-  spawnInterval = setInterval(() => {
-    if (gameActive) {
-      createObject();
+  clearInterval(gameState.spawnId);
+  gameState.spawnId = setInterval(() => {
+    if (gameState.isActive) {
+      createCollectible();
     }
   }, Math.random() * 800 + 400);
-  cancelAnimationFrame(objectAnimationFrame);
-  objectAnimationFrame = requestAnimationFrame(moveObjects);
+  cancelAnimationFrame(gameState.animationFrameId);
+  gameState.animationFrameId = requestAnimationFrame(moveCollectibles);
 }
 
-startBtn.addEventListener('click', () => {
+// Connect the main buttons to the game flow.
+buttonElements.start.addEventListener('click', () => {
   showScreen('howToPlay');
 });
 
-beginGameBtn.addEventListener('click', () => {
+buttonElements.beginGame.addEventListener('click', () => {
   startGame();
 });
 
-againBtn.addEventListener('click', () => {
+buttonElements.playAgain.addEventListener('click', () => {
   startGame();
 });
 
+// Let the player drag the drill on both desktop and mobile.
 playField.addEventListener('pointerdown', startDragging);
-playField.addEventListener('pointermove', dragPlayer);
+playField.addEventListener('pointermove', dragDrill);
 playField.addEventListener('pointerup', stopDragging);
 playField.addEventListener('pointercancel', stopDragging);
 
-updateScore();
+// Initial setup.
+updateHud();
 showScreen('start');
