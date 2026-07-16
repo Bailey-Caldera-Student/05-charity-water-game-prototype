@@ -250,6 +250,31 @@ li {
   font-size: 2rem;
   z-index: 2;
   pointer-events: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.game-object.small {
+  font-size: 1.4rem;
+}
+
+.game-object.medium {
+  font-size: 2.1rem;
+}
+
+.game-object.large {
+  font-size: 2.7rem;
+}
+
+.game-object.water {
+  filter: drop-shadow(0 2px 4px rgba(46, 157, 247, 0.4));
+}
+
+.game-object.jerry-can {
+  filter: drop-shadow(0 2px 4px rgba(79, 203, 83, 0.4));
+}
+
+.game-object.boulder {
+  filter: drop-shadow(0 2px 4px rgba(122, 122, 122, 0.4));
 }
 
 .floating-score {

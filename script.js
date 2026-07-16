@@ -24,6 +24,8 @@ let dragOffset = 0;
 let timerInterval = null;
 let spawnInterval = null;
 let objectAnimationFrame = null;
+let gameActive = false;
+let popupTimeouts = [];
 const objects = [];
 
 // Show one screen at a time.
@@ -34,9 +36,11 @@ function showScreen(screenName) {
 
 // Reset the game state and return to the gameplay view.
 function resetGame() {
+  clearGameLoop();
   score = 0;
   progress = 0;
   timer = 60;
+  gameActive = false;
   message.textContent = 'Keep drilling to reach clean water.';
   updateScore();
   updateTimer();
@@ -47,15 +51,23 @@ function resetGame() {
 // Start the actual gameplay.
 function startGame() {
   resetGame();
+  gameActive = true;
   startTimer();
   startSpawning();
 }
 
 // End the game and show the win screen.
-function endGame() {
+function clearGameLoop() {
   clearInterval(timerInterval);
   clearInterval(spawnInterval);
   cancelAnimationFrame(objectAnimationFrame);
+  popupTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+  popupTimeouts = [];
+}
+
+function endGame() {
+  gameActive = false;
+  clearGameLoop();
   finalScore.textContent = score;
   showScreen('win');
 }
@@ -96,7 +108,7 @@ function updateDrillPosition(x) {
 }
 
 function startDragging(event) {
-  if (!playField) {
+  if (!playField || !gameActive) {
     return;
   }
 
@@ -109,7 +121,7 @@ function startDragging(event) {
 }
 
 function dragPlayer(event) {
-  if (!isDragging || !playField) {
+  if (!isDragging || !playField || !gameActive) {
     return;
   }
 
@@ -133,21 +145,23 @@ function stopDragging(event) {
 function clearObjects() {
   objects.splice(0, objects.length);
   playField.querySelectorAll('.game-object').forEach(item => item.remove());
+  playField.querySelectorAll('.floating-score').forEach(item => item.remove());
 }
 
 function createObject() {
   const objectTypes = [
-    { name: 'water', symbol: '💧', points: 10 },
-    { name: 'jerry-can', symbol: '🫙', points: 20 },
-    { name: 'boulder', symbol: '🪨', points: -20 }
+    { name: 'water', symbol: '💧', points: 10, size: 'medium', speed: 2.5 },
+    { name: 'jerry-can', symbol: '🫙', points: 20, size: 'small', speed: 2 },
+    { name: 'boulder', symbol: '🪨', points: -20, size: 'large', speed: 1.5 }
   ];
   const type = objectTypes[Math.floor(Math.random() * objectTypes.length)];
   const item = document.createElement('div');
-  item.className = `game-object ${type.name}`;
+  item.className = `game-object ${type.name} ${type.size}`;
   item.textContent = type.symbol;
   item.dataset.points = type.points;
+  item.dataset.speed = type.speed;
 
-  const x = Math.random() * (playField.clientWidth - 40);
+  const x = Math.random() * (playField.clientWidth - 60);
   item.style.left = `${x}px`;
   item.style.top = '0px';
   playField.appendChild(item);
@@ -155,9 +169,14 @@ function createObject() {
 }
 
 function moveObjects() {
+  if (!gameActive) {
+    return;
+  }
+
   objects.forEach(item => {
     const top = Number(item.style.top.replace('px', ''));
-    const newTop = top + 2;
+    const speed = Number(item.dataset.speed || 2);
+    const newTop = top + speed;
     item.style.top = `${newTop}px`;
 
     if (newTop > playField.clientHeight - 70) {
@@ -182,12 +201,17 @@ function showFloatingText(x, y, points) {
   popup.style.top = `${Math.max(0, y - fieldRect.top)}px`;
   playField.appendChild(popup);
 
-  setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     popup.remove();
   }, 700);
+  popupTimeouts.push(timeoutId);
 }
 
 function checkCollisions() {
+  if (!gameActive) {
+    return;
+  }
+
   const drillRect = drillPlayer.getBoundingClientRect();
 
   objects.forEach(item => {
@@ -216,8 +240,10 @@ function checkCollisions() {
 function startSpawning() {
   clearInterval(spawnInterval);
   spawnInterval = setInterval(() => {
-    createObject();
-  }, 700);
+    if (gameActive) {
+      createObject();
+    }
+  }, Math.random() * 800 + 400);
   cancelAnimationFrame(objectAnimationFrame);
   objectAnimationFrame = requestAnimationFrame(moveObjects);
 }
