@@ -173,6 +173,20 @@ function moveObjects() {
   objectAnimationFrame = requestAnimationFrame(moveObjects);
 }
 
+function showFloatingText(x, y, points) {
+  const popup = document.createElement('div');
+  const fieldRect = playField.getBoundingClientRect();
+  popup.className = 'floating-score';
+  popup.textContent = points > 0 ? `+${points}` : `${points}`;
+  popup.style.left = `${Math.max(0, x - fieldRect.left)}px`;
+  popup.style.top = `${Math.max(0, y - fieldRect.top)}px`;
+  playField.appendChild(popup);
+
+  setTimeout(() => {
+    popup.remove();
+  }, 700);
+}
+
 function checkCollisions() {
   const drillRect = drillPlayer.getBoundingClientRect();
 
@@ -189,6 +203,7 @@ function checkCollisions() {
       const points = Number(item.dataset.points);
       score = Math.max(0, score + points);
       updateScore();
+      showFloatingText(itemRect.left, itemRect.top, points);
       item.remove();
       const index = objects.indexOf(item);
       if (index > -1) {

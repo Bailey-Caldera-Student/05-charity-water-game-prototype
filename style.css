@@ -252,6 +252,16 @@ li {
   pointer-events: none;
 }
 
+.floating-score {
+  position: absolute;
+  font-weight: bold;
+  color: var(--white);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  animation: float-up 0.7s ease-out forwards;
+  pointer-events: none;
+  z-index: 3;
+}
+
 .drill-player {
   position: absolute;
   left: 50%;
@@ -302,6 +312,17 @@ li {
   }
   50% {
     transform: translateY(-8px);
+  }
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px);
   }
 }
 
