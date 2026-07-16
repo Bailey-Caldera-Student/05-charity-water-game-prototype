@@ -13,14 +13,16 @@ const scoreValue = document.getElementById('scoreValue');
 const meterFill = document.getElementById('meterFill');
 const message = document.getElementById('message');
 const finalScore = document.getElementById('finalScore');
+const timerValue = document.getElementById('timerValue');
 const playField = document.querySelector('.play-field');
 const drillPlayer = document.getElementById('drillPlayer');
 
 let score = 0;
 let progress = 0;
-let timer = 30;
+let timer = 60;
 let isDragging = false;
 let dragOffset = 0;
+let timerInterval = null;
 
 // Show one screen at a time.
 function showScreen(screenName) {
@@ -32,19 +34,22 @@ function showScreen(screenName) {
 function resetGame() {
   score = 0;
   progress = 0;
-  timer = 30;
+  timer = 60;
   message.textContent = 'Keep drilling to reach clean water.';
   updateScore();
+  updateTimer();
   showScreen('game');
 }
 
 // Start the actual gameplay.
 function startGame() {
   resetGame();
+  startTimer();
 }
 
 // End the game and show the win screen.
 function endGame() {
+  clearInterval(timerInterval);
   finalScore.textContent = score;
   showScreen('win');
 }
@@ -54,6 +59,24 @@ function updateScore() {
   scoreValue.textContent = score;
   finalScore.textContent = score;
   meterFill.style.width = `${Math.min(progress, 100)}%`;
+}
+
+function updateTimer() {
+  timerValue.textContent = timer;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timer -= 1;
+    updateTimer();
+
+    if (timer <= 0) {
+      clearInterval(timerInterval);
+      message.textContent = 'Time is up! The drill reached the water.';
+      endGame();
+    }
+  }, 1000);
 }
 
 function clampPosition(x) {
