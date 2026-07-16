@@ -16,11 +16,33 @@ const finalScore = document.getElementById('finalScore');
 
 let score = 0;
 let progress = 0;
+let timer = 30;
 
 // Show one screen at a time.
 function showScreen(screenName) {
   Object.values(screens).forEach(screen => screen.classList.remove('active'));
   screens[screenName].classList.add('active');
+}
+
+// Reset the game state and return to the gameplay view.
+function resetGame() {
+  score = 0;
+  progress = 0;
+  timer = 30;
+  message.textContent = 'Keep drilling to reach clean water.';
+  updateScore();
+  showScreen('game');
+}
+
+// Start the actual gameplay.
+function startGame() {
+  resetGame();
+}
+
+// End the game and show the win screen.
+function endGame() {
+  finalScore.textContent = score;
+  showScreen('win');
 }
 
 // Update the score and the progress bar.
@@ -34,7 +56,7 @@ function updateScore() {
 function checkWin() {
   if (progress >= 100) {
     message.textContent = 'You reached drinkable water!';
-    showScreen('win');
+    endGame();
   }
 }
 
@@ -43,7 +65,7 @@ startBtn.addEventListener('click', () => {
 });
 
 beginGameBtn.addEventListener('click', () => {
-  showScreen('game');
+  startGame();
 });
 
 drillBtn.addEventListener('click', () => {
@@ -64,11 +86,7 @@ drillBtn.addEventListener('click', () => {
 });
 
 againBtn.addEventListener('click', () => {
-  score = 0;
-  progress = 0;
-  message.textContent = 'Keep drilling to reach clean water.';
-  updateScore();
-  showScreen('start');
+  startGame();
 });
 
 updateScore();
